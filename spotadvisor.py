@@ -19,6 +19,7 @@ def parseargs():
                         help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any (default = 1)')
     parser.add_argument('--format', default='table', choices={'table', 'csv', 'instancelist', 'json'},
                         help='Output format: table, csv, instancelist (default = table)')
+    parser.add_argument('--pretty', default=False, action='store_true', help="Pretty prints output. Only usable with '--format json'")
     args = parser.parse_args()
     return args
 
@@ -46,14 +47,19 @@ def main():
                     if instances[inst]['cores'] >= args.mincpus:
                         if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
                             if args.format == 'json':
-                                instlist.append(inst)
+                                inst_obj = instances[inst]
+                                inst_obj["instance_type"] = inst
+                                inst_obj["interruption_rate"] = ranges[rates[args.region][args.os][inst]['r']]['label']
+                                instlist.append(instances[inst])
                             elif args.format == 'table':
                                 print("%-12s\t%s" % (inst, ranges[rates[args.region][args.os][inst]['r']]['label']))
                             elif args.format == 'csv':
                                 print("%s, %s" % (inst, ranges[rates[args.region][args.os][inst]['r']]['label']))
                             else:
                                 print("%s" % inst)
-        if args.format == 'json':
+        if args.format == 'json' and args.pretty:
+            print(json.dumps(instlist, indent=2))
+        else:
             print(json.dumps(instlist))
 
 
