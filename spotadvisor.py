@@ -23,6 +23,20 @@ def parseargs():
     args = parser.parse_args()
     return args
 
+
+def print_out(data, args):
+    if args.format == 'json':
+        print(json.dumps(data, indent=2)) if args.pretty else print(json.dumps(data))
+    elif args.format == 'table':
+        for i in data:
+            print("%-12s\t%s" % (i['instance_type'], i['interruption_rate']))
+    elif args.format == 'csv':
+        for i in data:
+            print("%s, %s" % (i['instance_type'], i['interruption_rate']))
+    else:
+        print("%s" % i['instance_type'])
+
+
 def main():
 
     args = parseargs()
@@ -33,35 +47,28 @@ def main():
         instances = data['instance_types']
         rates = data['spot_advisor']
 
-        if args.region not in rates.keys():
-            logging.error("Region %s not found in AWS region list." % args.region)
-            exit(1)
+    if args.region not in rates.keys():
+        logging.error("Region %s not found in AWS region list." % args.region)
+        exit(1)
 
-        instlist = []
-        for inst in instances:
-            fam = inst.split('.')[0]
-            if args.intelonly and len(fam) > 2 and fam[2] in ['a', 'g']:
-                continue
-            if inst[:2] in ppofamilies:
-                if inst in rates[args.region][args.os]:
-                    if instances[inst]['cores'] >= args.mincpus:
-                        if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
-                            if args.format == 'json':
-                                inst_obj = instances[inst]
-                                inst_obj["instance_type"] = inst
-                                inst_obj["interruption_rate"] = ranges[rates[args.region][args.os][inst]['r']]['label']
-                                instlist.append(instances[inst])
-                            elif args.format == 'table':
-                                print("%-12s\t%s" % (inst, ranges[rates[args.region][args.os][inst]['r']]['label']))
-                            elif args.format == 'csv':
-                                print("%s, %s" % (inst, ranges[rates[args.region][args.os][inst]['r']]['label']))
-                            else:
-                                print("%s" % inst)
-        if args.format == 'json' and args.pretty:
-            print(json.dumps(instlist, indent=2))
-        else:
-            print(json.dumps(instlist))
+    instlist = []
+    for inst in instances:
+        
+        inst_obj = instances[inst]
+        inst_obj["instance_type"] = inst
+        fam = inst.split('.')[0]
 
+        if args.intelonly and len(fam) > 2 and fam[2] in ['a', 'g']:
+            continue
+
+        if inst[:2] in ppofamilies:
+            if inst in rates[args.region][args.os]:
+                if instances[inst]['cores'] >= args.mincpus:
+                    if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
+                            inst_obj["interruption_rate"] = ranges[rates[args.region][args.os][inst]['r']]['label']
+                            instlist.append(instances[inst])
+    
+    print_out(instlist, args)
 
 if __name__ == '__main__':
     exit(main())
