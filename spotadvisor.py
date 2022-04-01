@@ -48,8 +48,8 @@ def parseargs():
     parser.add_argument('--mincpus', default=48, type=int, help='Minimum vCPU count (default = 48)')
     parser.add_argument('--procfamily', default='any', type=str.lower,
                         choices={'any', 'amd', 'graviton', 'intel'},
-                        help='Processor family (default = any')
-    parser.add_argument('--maxintcode', default=4, type=int, choices=range(0,5), metavar="[0-4]",
+                        help='Processor family (default = any)')
+    parser.add_argument('--maxintcode', default=1, type=int, choices=range(0,5), metavar="[0-4]",
                         help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any (default = 1)')
     parser.add_argument('--format', default='table', choices={'table', 'csv', 'instancelist', 'json'},
                         help='Output format: table, csv, instancelist (default = table)')
