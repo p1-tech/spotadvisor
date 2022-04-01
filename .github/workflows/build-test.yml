@@ -32,12 +32,12 @@ jobs:
 
       - name: json-test
         run: |
-          docker run -it --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format json
+          docker run --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format json
 
       - name: csv-test
         run: |
-          docker run -it --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format csv
+          docker run --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format csv
     
       - name: table-test
         run: |
-          docker run -it --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format table
+          docker run --rm ${{ env.TEST_TAG }} python spotadvisor.py --maxintcode 2 --mincpus 48  --region=us-west-2 --intelonly --format table
