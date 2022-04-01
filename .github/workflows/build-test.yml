@@ -3,25 +3,29 @@ on:
     branches:
       - 'main'
 
+defaults:
+  run:
+    working-directory: .
+
 env:
   TEST_TAG: p1/spotadvisor:test
 
 jobs:
   docker:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: Build and test spotadvisor
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       
-      - name: Build
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@v1
-        id: builder
+        id: buildx
 
-      - name: Build against builder1
+      - name: Build against buildx
         uses: docker/build-push-action@v2
         with:
-          builder: builder
+          builder: buildx
           context: .
           push: false
           tags: ${{ env.TEST_TAG }}
