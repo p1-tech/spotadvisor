@@ -27,12 +27,15 @@ def parseargs():
 def print_out(data, args):
     if args.format == 'json':
         print(json.dumps(data, indent=2)) if args.pretty else print(json.dumps(data))
+
     elif args.format == 'table':
         for i in data:
             print("%-12s\t%s" % (i['instance_type'], i['interruption_rate']))
+
     elif args.format == 'csv':
         for i in data:
             print("%s, %s" % (i['instance_type'], i['interruption_rate']))
+
     else:
         print("%s" % i['instance_type'])
 
@@ -53,7 +56,6 @@ def main():
 
     instlist = []
     for inst in instances:
-        
         inst_obj = instances[inst]
         inst_obj["instance_type"] = inst
         fam = inst.split('.')[0]
