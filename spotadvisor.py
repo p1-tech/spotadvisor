@@ -21,6 +21,7 @@ def parseargs():
                         help='Output format: table, csv, instancelist (default = table)')
     parser.add_argument('--pretty', default=False, action='store_true', help="Pretty prints output. Only usable with '--format json'")
     args = parser.parse_args()
+    
     return args
 
 
