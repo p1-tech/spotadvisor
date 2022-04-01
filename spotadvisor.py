@@ -5,7 +5,7 @@
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
+# as published by the Free Software Foundation; either version 3
 # of the License, or (at your option) any later version.
 
 # This program is distributed in the hope that it will be useful,
@@ -20,15 +20,15 @@
 import argparse
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 
-ppofamilies = ["m3","m4","m5", "m6", "c3", "c4", "c5", "c6", "r3", "r4", "r5"]
-
+ppofamilies = "^(m[3456].*|c[3456].*|r[3456].*)$"
 
 defaultadvisorurl = "https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json"
 
-# Define processor families here.  Intel is the catch all, and should have all suffixes not used
+# Define processor families here.  Intel is the catchall, and should have all suffixes not used
 # by another processor family.
 procfamilies = {'amd': 'a',
               'graviton': 'g',
@@ -39,6 +39,9 @@ def parseargs():
     parser = argparse.ArgumentParser(
         description='Generate a list of spot instance suggestions based on user input and interruption data.'
     )
+    parser.add_argument('--familylist', default='any', type=str.lower,
+                        help='Comma separated list of instance families to consider.  "any" selects \
+                        all instance families.  Individual entries support regular expression syntax.')
     parser.add_argument('--region', default='eu-west-1', type=str.lower, help='AWS region')
     parser.add_argument('--os', default='Linux', choices={"Linux", "Windows"},
                         help='Operating System: Linux or Windows (default = Linux)s')
@@ -133,6 +136,15 @@ def main():
 
     # Iterate over the instances in the spot advisor data structure.
     instlist = []
+    if args.familylist == 'any':
+        searchstring = '^.*$'
+    elif args.familylist == 'ppo':
+        searchstring = ppofamilies
+    else:
+        searchstring = "^(%s)$" % re.sub(",","|", args.familylist)
+
+    exp = re.compile(searchstring)
+
     for inst in instances:
         inst_obj = instances[inst]
         inst_obj["instance_type"] = inst
@@ -147,7 +159,7 @@ def main():
                 continue
 
         # Match against instance families in the PPO list. Add to the eligible instance list if matched.
-        if inst[:2] in ppofamilies:
+        if re.match(exp, fam):
             if inst in rates[args.region][args.os]:
                 if instances[inst]['cores'] >= args.mincpus:
                     if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
