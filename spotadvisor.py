@@ -53,9 +53,36 @@ def parseargs():
     parser.add_argument('--pretty', default=False, action='store_true', help="Pretty prints output. Only usable with '--format json'")
     parser.add_argument('--advisordata', default=defaultadvisorurl,
                         metavar="URL", help='URL of spot advisor data file')
+    megroup = parser.add_mutually_exclusive_group()
+    megroup.add_argument('--regionlist', default=False, action='store_true',
+                        help='Print region list and exit')
+    megroup.add_argument('--instancelist', default=False, action='store_true',
+                        help='Print instance list and exit')
     args = parser.parse_args()
     return args
 
+
+def listregions(data, args):
+    # List regions from the advisor data set
+
+    regionset = sorted(set(data.keys()))
+    if args.format == 'json':
+        print(json.dumps(regionset, indent=2)) if args.pretty else print(json.dumps(regionset))
+    else:
+        for region in regionset:
+            print(region)
+    return
+
+
+def listinstances(instances, args):
+    # List instance types from the advisor data set
+    instanceset = sorted(set(instances.keys()))
+    if args.format == 'json':
+        print(json.dumps(instanceset, indent=2)) if args.pretty else print(json.dumps(instanceset))
+    else:
+        for instance in instanceset:
+            print(instance)
+    return
 
 def print_out(data, args):
     if args.format == 'json':
@@ -86,10 +113,18 @@ def main():
             rates = data['spot_advisor']
     except ValueError as e:
         logging.error("unable to get advisor data: %s" % e.args[0])
-        exit(1)
+        return 1
     except urllib.error.URLError as e:
         logging.error("unable to get advisor data: %s" % e.reason)
-        exit(1)
+        return 1
+
+    if args.regionlist:
+        listregions(rates, args)
+        return 0
+
+    if args.instancelist:
+        listinstances(instances, args)
+        return 0
 
     # Match requested region to the advisor data set.  Abort if no match found.
     if args.region not in rates.keys():
