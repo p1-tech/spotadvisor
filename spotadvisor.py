@@ -20,10 +20,10 @@
 import argparse
 import json
 import logging
-from operator import itemgetter
 import re
 import urllib.error
 import urllib.request
+from operator import itemgetter
 
 ppafamilies = "^(m[3456].*|c[3456].*|r[3456].*)$"
 
