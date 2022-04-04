@@ -42,20 +42,20 @@ def parseargs():
         description='Generate a list of spot instance suggestions based on user input and interruption data.'
     )
     parser.add_argument('--familylist', default='any', type=str.lower,
-                        help='Comma separated list of instance families to consider.  "any" selects \
+                        help='Comma separated list of instance families to consider.  "all" or "any" selects \
                         all instance families.  Individual entries support simple regular expression syntax.')
-    parser.add_argument('--region', default='eu-west-1', type=str.lower, help='AWS region')
+    parser.add_argument('--region', default='eu-west-1', type=str.lower, help='AWS region (default: eu-west-1')
     parser.add_argument('--os', default='Linux', choices={"Linux", "Windows"},
-                        help='Operating System: Linux or Windows (default = Linux)s')
-    parser.add_argument('--mincpus', default=48, type=int, help='Minimum vCPU count (default = 48)')
+                        help='Operating System: Linux or Windows (default: Linux)s')
+    parser.add_argument('--mincpus', default=0, type=int, help='Minimum vCPU count')
+    parser.add_argument('--maxcpus', default=0, type=int, help='Maximum vCPU count')
     parser.add_argument('--procfamily', default='any', type=str.lower,
                         choices={'any', 'amd', 'graviton', 'intel'},
                         help='Processor family (default = any)')
-    parser.add_argument('--maxintcode', default=1, type=int, choices=range(0, 5), metavar="[0-4]",
-                        help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any \
-                        (default = 1)')
+    parser.add_argument('--maxintcode', default=4, type=int, choices=range(0, 5), metavar="[0-4]",
+                        help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any')
     parser.add_argument('--format', default='table', choices={'table', 'csv', 'instancelist', 'json'},
-                        help='Output format: table, csv, instancelist (default = table)')
+                        help='Output format: table, csv, instancelist (default: table)')
     parser.add_argument('--pretty', default=False, action='store_true',
                         help="Pretty prints output. Only usable with '--format json'")
     parser.add_argument('--advisordata', default=defaultadvisorurl,
@@ -150,7 +150,7 @@ def main():
 
     # Iterate over the instances in the spot advisor data structure.
     instlist = []
-    if args.familylist == 'any':
+    if args.familylist in ['all', 'any']:
         searchstring = '^.*$'
     elif args.familylist in ['ppa', 'ppo']:
         searchstring = ppafamilies
@@ -175,7 +175,9 @@ def main():
         # Match against instance families in the PPO list. Add to the eligible instance list if matched.
         if re.match(exp, fam):
             if inst in rates[args.region][args.os]:
-                if instances[inst]['cores'] >= args.mincpus:
+                # Compare to vCPU limits
+                if (instances[inst]['cores'] >= args.mincpus) and \
+                        ((not args.maxcpus) or (instances[inst]['cores'] <= args.maxcpus)):
                     if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
                         inst_obj["interruption_rate"] = rates[args.region][args.os][inst]['r']
                         inst_obj["interruption_text"] = ranges[rates[args.region][args.os][inst]['r']]['label']

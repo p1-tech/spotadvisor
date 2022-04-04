@@ -15,13 +15,15 @@ the AWS Spot Advisor data feed and input from the user.
 
  __--help, -h__ prints help message
 
- __--familylist__ A comma delimited list of the instance family prefixes to search.  'any' 
+ __--familylist__ A comma delimited list of the instance family prefixes to search.  'any' or 'all'
 selects all families.  Regular expressions are supported within list items (i.e r5.*,c6,
  m[56])
 
 __--os__ Operating system language to match.  Options are Linux or Windows.
 
 __--mincpus__ The minimum number of instance vCPUs to include in the search.
+
+__--maxcpus__ The maximum number of instance vCPUs to include in the search.
 
 __--procfamily__ The processor family to include in the search.  'any' includes all
 processor families, other options are intel, amd, or graviton.
