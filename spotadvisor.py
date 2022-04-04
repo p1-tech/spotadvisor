@@ -103,7 +103,7 @@ def print_out(data, args):
         sortdata = data
 
     if args.format == 'json':
-        print(json.dumps(data, indent=2)) if args.pretty else print(json.dumps(data))
+        print(json.dumps(sortdata, indent=2)) if args.pretty else print(json.dumps(sortdata))
 
     elif args.format == 'table':
         for i in sortdata:
