@@ -20,20 +20,22 @@
 import argparse
 import json
 import logging
+from operator import itemgetter
 import re
 import urllib.error
 import urllib.request
 
-ppofamilies = "^(m[3456].*|c[3456].*|r[3456].*)$"
+ppafamilies = "^(m[3456].*|c[3456].*|r[3456].*)$"
 
 defaultadvisorurl = "https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json"
 
 # Define processor families here.  Intel is the catchall, and should have all suffixes not used
 # by another processor family.
 procfamilies = {'amd': 'a',
-              'graviton': 'g',
-              'intel': 'bcdefhijklmnopqrstuvwxyz'
-              }
+                'graviton': 'g',
+                'intel': 'bcdefhijklmnopqrstuvwxyz'
+                }
+
 
 def parseargs():
     parser = argparse.ArgumentParser(
@@ -41,7 +43,7 @@ def parseargs():
     )
     parser.add_argument('--familylist', default='any', type=str.lower,
                         help='Comma separated list of instance families to consider.  "any" selects \
-                        all instance families.  Individual entries support regular expression syntax.')
+                        all instance families.  Individual entries support simple regular expression syntax.')
     parser.add_argument('--region', default='eu-west-1', type=str.lower, help='AWS region')
     parser.add_argument('--os', default='Linux', choices={"Linux", "Windows"},
                         help='Operating System: Linux or Windows (default = Linux)s')
@@ -49,18 +51,20 @@ def parseargs():
     parser.add_argument('--procfamily', default='any', type=str.lower,
                         choices={'any', 'amd', 'graviton', 'intel'},
                         help='Processor family (default = any)')
-    parser.add_argument('--maxintcode', default=1, type=int, choices=range(0,5), metavar="[0-4]",
-                        help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any (default = 1)')
+    parser.add_argument('--maxintcode', default=1, type=int, choices=range(0, 5), metavar="[0-4]",
+                        help='Maximum interruption rate to consider: 0=5%%, 1=10%%, 2=15%%, 3=20%%, 4=any \
+                        (default = 1)')
     parser.add_argument('--format', default='table', choices={'table', 'csv', 'instancelist', 'json'},
                         help='Output format: table, csv, instancelist (default = table)')
-    parser.add_argument('--pretty', default=False, action='store_true', help="Pretty prints output. Only usable with '--format json'")
+    parser.add_argument('--pretty', default=False, action='store_true',
+                        help="Pretty prints output. Only usable with '--format json'")
     parser.add_argument('--advisordata', default=defaultadvisorurl,
                         metavar="URL", help='URL of spot advisor data file')
+    parser.add_argument('--sort', default='name', type=str.lower, choices={'name', 'avail', 'vcpucount'},
+                        help='Sort order for results (default: name)')
     megroup = parser.add_mutually_exclusive_group()
-    megroup.add_argument('--regionlist', default=False, action='store_true',
-                        help='Print region list and exit')
-    megroup.add_argument('--instancelist', default=False, action='store_true',
-                        help='Print instance list and exit')
+    megroup.add_argument('--regionlist', default=False, action='store_true', help='Print region list and exit')
+    megroup.add_argument('--instancelist', default=False, action='store_true', help='Print instance list and exit')
     args = parser.parse_args()
     return args
 
@@ -87,20 +91,30 @@ def listinstances(instances, args):
             print(instance)
     return
 
+
 def print_out(data, args):
+    if args.sort == 'avail':
+        sortdata = sorted(data, key=itemgetter('interruption_rate'))
+    elif args.sort == 'name':
+        sortdata = sorted(data, key=itemgetter('instance_type'))
+    elif args.sort == 'vcpucount':
+        sortdata = sorted(data, key=itemgetter('cores'), reverse=True)
+    else:
+        sortdata = data
+
     if args.format == 'json':
         print(json.dumps(data, indent=2)) if args.pretty else print(json.dumps(data))
 
     elif args.format == 'table':
-        for i in data:
-            print("%-12s\t%s" % (i['instance_type'], i['interruption_rate']))
+        for i in sortdata:
+            print("%-12s\t%s" % (i['instance_type'], i['interruption_text']))
 
     elif args.format == 'csv':
-        for i in data:
-            print("%s, %s" % (i['instance_type'], i['interruption_rate']))
+        for i in sortdata:
+            print("%s, %s" % (i['instance_type'], i['interruption_text']))
 
     else:
-        for i in data:
+        for i in sortdata:
             print("%s" % i['instance_type'])
 
 
@@ -138,10 +152,10 @@ def main():
     instlist = []
     if args.familylist == 'any':
         searchstring = '^.*$'
-    elif args.familylist == 'ppo':
-        searchstring = ppofamilies
+    elif args.familylist in ['ppa', 'ppo']:
+        searchstring = ppafamilies
     else:
-        searchstring = "^(%s)$" % re.sub(",","|", args.familylist)
+        searchstring = "^(%s)$" % re.sub(",", "|", args.familylist)
 
     exp = re.compile(searchstring)
 
@@ -163,8 +177,9 @@ def main():
             if inst in rates[args.region][args.os]:
                 if instances[inst]['cores'] >= args.mincpus:
                     if rates[args.region][args.os][inst]['r'] <= args.maxintcode:
-                            inst_obj["interruption_rate"] = ranges[rates[args.region][args.os][inst]['r']]['label']
-                            instlist.append(instances[inst])
+                        inst_obj["interruption_rate"] = rates[args.region][args.os][inst]['r']
+                        inst_obj["interruption_text"] = ranges[rates[args.region][args.os][inst]['r']]['label']
+                        instlist.append(instances[inst])
     
     print_out(instlist, args)
 
