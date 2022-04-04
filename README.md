@@ -35,6 +35,9 @@ list of instance types.
 
 __--pretty__ Adds line breaks and indentation to the JSON formatted output.
 
+__--sort__ Sort output.  Options are name, avail (interruption rate), and vcpucount.
+vcpucount sorting is highest vcpu count instances first.
+
 __--advisordata__ Overrides default URL for AWS spot advisor data
 
 __--regionlist__ Prints AWS region list and exits.
